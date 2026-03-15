@@ -1,73 +1,91 @@
-# React + TypeScript + Vite
+# Sentra - Intelligent Emergency Response & Crisis Management System
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+**Sentra** is a real-time command and control dashboard designed to streamline emergency response operations. Integrated with live geospatial tracking, automated priority scoring, and crowd-sourced verification, Sentra empowers first responders and civic authorities to make faster, data-driven decisions during critical incidents.
 
-Currently, two official plugins are available:
+## 🚀 Key Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+*   **📍 Real-Time Geospatial Tracking**
+    Interactive maps powered by **Leaflet** visualize incidents as they happen, using heatmaps and clustering to identify high-risk zones immediately.
 
-## React Compiler
+*   **⚡ Automated Priority Intelligence**
+    A custom algorithm ([utils/priority.ts](cci:7://file:///c:/Users/yagye/OneDrive/Desktop/Hackathon/sentra/Sentra/src/utils/priority.ts:0:0-0:0)) analyzes severity, time, and verification status to auto-calculate a "Priority Score" (0-100), ensuring critical life-threatening events float to the top.
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+*   **👥 Crowd & IoT Verification**
+    Reduces false alarms through a hybrid verification system:
+    *   **Crowd-Sourcing:** Aggregates user reports to validate incident authenticity.
+    *   **Sensor Integration:** Simulates integration with IoT sensors (e.g., IR sensors for fire/smog) for automated hardware verification.
 
-## Expanding the ESLint configuration
+*   **🔍 Smart Deduplication**
+    Intelligent logic (`utils/deduplication.ts`) detects and flags duplicate reports within the same geolocation and time window to prevent data clutter.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+*   **📱 Cross-Platform Support**
+    Built with **Capacitor**, Sentra is designed to run seamlessly as a web dashboard and a native Android application.
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🛠️ Tech Stack
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+*   **Frontend:** React (Vite), TypeScript
+*   **Styling:** Tailwind CSS, PostCSS
+*   **Backend & Database:** Firebase Firestore (Real-time NoSQL)
+*   **Maps & GIS:** Leaflet, React Leaflet, Leaflet.beat
+*   **Mobile Runtime:** Capacitor (Android)
+*   **Icons & UI:** Lucide React
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+## 📦 Installation & Setup
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Follow these steps to run the project locally.
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+### 1. Clone the Repository
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-```
+```bash
+git clone [https://github.com/your-username/sentra.git](https://github.com/your-username/sentra.git)
+cd sentra
+
+2. Install Dependencies
+bash
+npm install
+3. Environment Configuration
+Create a .env file in the root directory and add your Firebase configuration keys:
+
+env
+VITE_FIREBASE_API_KEY=your_api_key
+VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+VITE_FIREBASE_PROJECT_ID=your_project_id
+VITE_FIREBASE_STORAGE_BUCKET=your_storage_bucket
+VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
+VITE_FIREBASE_APP_ID=your_app_id
+4. Run Development Server
+bash
+npm run dev
+The app will launch at http://localhost:5173.
+
+📱 Mobile Build (Android)
+To sync and run the Android version:
+
+bash
+npm run build
+npx cap sync
+npx cap open android
+📂 Project Structure
+text
+src/
+├── components/       # Reusable UI components
+├── context/          # React Context (Auth, Global State)
+├── pages/            # Main Views (Dashboard, Map, Login)
+├── services/         # Firebase & API Logic
+│   ├── firebase.ts          # Core Config
+│   └── incidents.service.ts # Incident CRUD & Verification
+├── utils/            # Helper Algorithms
+│   ├── deduplication.ts     # Duplicate detection logic
+│   └── priority.ts          # Severity scoring algorithm
+├── App.tsx           # Main Router
+└── main.tsx          # Entry Point
+🤝 Contributing
+Contributions are welcome! Please fork the repository and create a pull request for any feature enhancements or bug fixes.
+
+Fork the Project
+Create your Feature Branch (git checkout -b feature/AmazingFeature)
+Commit your Changes (git commit -m 'Add some AmazingFeature')
+Push to the Branch (git push origin feature/AmazingFeature)
+Open a Pull Request
+📄 License
+Distributed under the MIT License. See LICENSE for more information.
