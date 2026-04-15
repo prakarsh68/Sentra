@@ -1,212 +1,197 @@
 /* =====================================================
-SENTRA INCIDENT MANAGEMENT SYSTEM DATABASE (FINAL)
-Covers ALL RUBRIC POINTS
+COMPLETE DBMS DEMO (NORMALIZATION + ACID + TRIGGERS + MORE)
 ===================================================== */
 
-DROP DATABASE IF EXISTS sentra;
-CREATE DATABASE sentra;
-USE sentra;
+DROP DATABASE IF EXISTS full_demo;
+CREATE DATABASE full_demo;
+USE full_demo;
 
-/* =========================
-TABLES WITH STRONG CONSTRAINTS
-========================= */
+-------------------------------------------------------
+-- 🔴 UNF (Unnormalized Form)
+-------------------------------------------------------
+
+CREATE TABLE IncidentData_UNF (
+    incident_id INT,
+    user_name VARCHAR(100),
+    user_email VARCHAR(100),
+    responders VARCHAR(200),
+    departments VARCHAR(200)
+);
+
+INSERT INTO IncidentData_UNF VALUES
+(1,'Arjun','arjun@sentra.com','Ravi,Kumar','Ambulance,Police'),
+(2,'Meera','meera@sentra.com','Suresh','Fire Department');
+
+SELECT * FROM IncidentData_UNF;
+
+
+-------------------------------------------------------
+-- 🟡 1NF (Atomic Values)
+-------------------------------------------------------
+
+CREATE TABLE IncidentData_1NF (
+    incident_id INT,
+    user_name VARCHAR(100),
+    user_email VARCHAR(100),
+    responder_name VARCHAR(100),
+    department VARCHAR(100)
+);
+
+INSERT INTO IncidentData_1NF VALUES
+(1,'Arjun','arjun@sentra.com','Ravi','Ambulance'),
+(1,'Arjun','arjun@sentra.com','Kumar','Police'),
+(2,'Meera','meera@sentra.com','Suresh','Fire Department');
+
+SELECT * FROM IncidentData_1NF;
+
+
+-------------------------------------------------------
+-- 🟢 2NF (Remove Partial Dependency)
+-------------------------------------------------------
 
 CREATE TABLE users (
-user_id INT AUTO_INCREMENT PRIMARY KEY,
-name VARCHAR(100) NOT NULL,
-email VARCHAR(100) UNIQUE,
-role VARCHAR(50),
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    user_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100)
 );
+
+INSERT INTO users VALUES
+(1,'Arjun','arjun@sentra.com'),
+(2,'Meera','meera@sentra.com');
+
+SELECT * FROM users;
+
 
 CREATE TABLE incidents (
-incident_id INT AUTO_INCREMENT PRIMARY KEY,
-type VARCHAR(50) NOT NULL,
-severity ENUM('Low','Medium','High','Critical') NOT NULL,
-description TEXT,
-latitude DECIMAL(10,6),
-longitude DECIMAL(10,6),
-confidence INT CHECK (confidence BETWEEN 0 AND 100),
-created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    incident_id INT PRIMARY KEY,
+    user_id INT,
+    type VARCHAR(50),
+    severity VARCHAR(20),
+    confidence INT CHECK (confidence BETWEEN 0 AND 100)
 );
+
+INSERT INTO incidents VALUES
+(1,1,'Accident','Low',60),
+(2,2,'Fire','High',80);
+
+SELECT * FROM incidents;
+
 
 CREATE TABLE responders (
-responder_id INT AUTO_INCREMENT PRIMARY KEY,
-name VARCHAR(100),
-department VARCHAR(50)
+    responder_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    department VARCHAR(100)
 );
 
-CREATE TABLE reports (
-report_id INT AUTO_INCREMENT PRIMARY KEY,
-user_id INT,
-incident_id INT,
-status VARCHAR(30) NOT NULL,
-reported_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
-FOREIGN KEY (incident_id) REFERENCES incidents(incident_id) ON DELETE CASCADE
-);
+INSERT INTO responders VALUES
+(1,'Ravi','Ambulance'),
+(2,'Kumar','Police'),
+(3,'Suresh','Fire Department');
+
+SELECT * FROM responders;
+
 
 CREATE TABLE responses (
-response_id INT AUTO_INCREMENT PRIMARY KEY,
-incident_id INT,
-responder_id INT,
-response_time INT,
-resolved BOOLEAN,
-FOREIGN KEY (incident_id) REFERENCES incidents(incident_id) ON DELETE CASCADE,
-FOREIGN KEY (responder_id) REFERENCES responders(responder_id) ON DELETE CASCADE
+    incident_id INT,
+    responder_id INT,
+    response_time INT,
+    resolved BOOLEAN
 );
 
-/* =========================
-INDEXES
-========================= */
-
-CREATE INDEX idx_incident_type ON incidents(type);
-CREATE INDEX idx_severity ON incidents(severity);
-
-/* =========================
-DATA INSERTION
-========================= */
-
-INSERT INTO users(name,email,role) VALUES
-('Arjun','[arjun@sentra.com](mailto:arjun@sentra.com)','Reporter'),
-('Meera','[meera@sentra.com](mailto:meera@sentra.com)','Reporter'),
-('Admin','[admin@sentra.com](mailto:admin@sentra.com)','Admin');
-
-INSERT INTO incidents(type,severity,description,latitude,longitude,confidence) VALUES
-('Accident','Low','Bike crash on highway',12.822300,80.042800,60),
-('Medical','High','Heart attack emergency',12.825500,80.041200,90),
-('Fire','High','Apartment fire reported',12.826000,80.043000,80);
-
-INSERT INTO responders(name,department) VALUES
-('Ravi','Ambulance'),
-('Kumar','Police'),
-('Suresh','Fire Department');
-
-INSERT INTO reports(user_id,incident_id,status) VALUES
-(1,1,'Verified'),
-(2,2,'Pending'),
-(1,3,'Verified');
-
-INSERT INTO responses(incident_id,responder_id,response_time,resolved) VALUES
+INSERT INTO responses VALUES
 (1,1,6,TRUE),
-(2,2,10,FALSE),
-(3,3,8,TRUE);
+(1,2,8,TRUE),
+(2,3,10,FALSE);
 
-/* =========================
-UPDATE + DELETE
-========================= */
+SELECT * FROM responses;
 
-UPDATE incidents SET severity='Critical' WHERE incident_id=3;
-DELETE FROM reports WHERE report_id=2;
 
-/* =========================
-TRANSACTION (TCL)
-========================= */
+-------------------------------------------------------
+-- 🔵 3NF (Remove Transitive Dependency)
+-------------------------------------------------------
+
+CREATE TABLE departments (
+    dept_id INT PRIMARY KEY,
+    dept_name VARCHAR(100)
+);
+
+INSERT INTO departments VALUES
+(1,'Ambulance'),
+(2,'Police'),
+(3,'Fire Department');
+
+SELECT * FROM departments;
+
+
+CREATE TABLE responders_3NF (
+    responder_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    dept_id INT
+);
+
+INSERT INTO responders_3NF VALUES
+(1,'Ravi',1),
+(2,'Kumar',2),
+(3,'Suresh',3);
+
+SELECT * FROM responders_3NF;
+
+
+-------------------------------------------------------
+-- 🔐 TRANSACTIONS (ACID)
+-------------------------------------------------------
 
 START TRANSACTION;
-INSERT INTO incidents(type,severity,description)
-VALUES ('Flood','High','Street flooding reported');
+
+INSERT INTO incidents VALUES (3,1,'Flood','High',90);
+
+-- Rollback ensures Atomicity
 ROLLBACK;
 
-/* =========================
-JOINS
-========================= */
+-- If COMMIT used → Durability
 
-SELECT u.name, i.type, r.status
-FROM users u
-JOIN reports r ON u.user_id = r.user_id
-JOIN incidents i ON r.incident_id = i.incident_id;
 
-SELECT u.name, r.report_id
-FROM users u
-LEFT JOIN reports r ON u.user_id = r.user_id;
+-------------------------------------------------------
+-- 🔄 CONCURRENCY (LOCKING DEMO)
+-------------------------------------------------------
 
-SELECT i.type, res.response_time
-FROM incidents i
-RIGHT JOIN responses res ON i.incident_id = res.incident_id;
+-- This update applies EXCLUSIVE LOCK internally
+UPDATE incidents
+SET severity='Critical'
+WHERE incident_id=1;
 
-/* =========================
-AGGREGATION + HAVING
-========================= */
 
-SELECT type, COUNT(*) AS total_incidents
-FROM incidents
-GROUP BY type
-HAVING COUNT(*) >= 1;
-
-SELECT AVG(response_time) AS avg_response_time
-FROM responses;
-
-/* =========================
-SET OPERATIONS
-========================= */
-
-SELECT name FROM users
-UNION
-SELECT name FROM responders;
-
-SELECT name FROM users
-WHERE name IN (SELECT name FROM responders);
-
-/* =========================
-SUBQUERIES
-========================= */
-
-SELECT name
-FROM users
-WHERE user_id IN (
-SELECT user_id FROM reports WHERE status='Verified'
-);
-
-SELECT i.type, i.severity
-FROM incidents i
-WHERE confidence > (
-SELECT AVG(confidence)
-FROM incidents
-WHERE type = i.type
-);
-
-/* =========================
-VIEWS
-========================= */
+-------------------------------------------------------
+-- 👁️ VIEWS
+-------------------------------------------------------
 
 CREATE VIEW incident_summary AS
-SELECT i.type, i.severity, res.response_time, res.resolved
+SELECT i.incident_id, u.name, i.type, i.severity
 FROM incidents i
-JOIN responses res ON i.incident_id = res.incident_id;
+JOIN users u ON i.user_id = u.user_id;
 
-CREATE VIEW detailed_incident_view AS
-SELECT
-u.name AS reporter,
-i.type,
-i.severity,
-r.status,
-res.response_time,
-res.resolved
-FROM users u
-JOIN reports r ON u.user_id = r.user_id
-JOIN incidents i ON r.incident_id = i.incident_id
-LEFT JOIN responses res ON i.incident_id = res.incident_id;
+SELECT * FROM incident_summary;
 
-/* =========================
-STORED PROCEDURE
-========================= */
+
+-------------------------------------------------------
+-- ⚙️ STORED PROCEDURE
+-------------------------------------------------------
 
 DELIMITER //
 
-CREATE PROCEDURE GetHighSeverityIncidents()
+CREATE PROCEDURE GetCriticalIncidents()
 BEGIN
-SELECT * FROM incidents
-WHERE severity='High' OR severity='Critical';
+    SELECT * FROM incidents WHERE severity='Critical';
 END //
 
 DELIMITER ;
 
-CALL GetHighSeverityIncidents();
+CALL GetCriticalIncidents();
 
-/* =========================
-FUNCTION
-========================= */
+
+-------------------------------------------------------
+-- 🔢 FUNCTION
+-------------------------------------------------------
 
 DELIMITER //
 
@@ -214,109 +199,91 @@ CREATE FUNCTION getResolvedCount()
 RETURNS INT
 DETERMINISTIC
 BEGIN
-DECLARE total INT;
-SELECT COUNT(*) INTO total FROM responses WHERE resolved = TRUE;
-RETURN total;
+    DECLARE total INT;
+    SELECT COUNT(*) INTO total FROM responses WHERE resolved = TRUE;
+    RETURN total;
 END //
 
 DELIMITER ;
 
 SELECT getResolvedCount();
 
-/* =========================
-TRIGGERS
-========================= */
 
+-------------------------------------------------------
+-- ⚡ TRIGGERS
+-------------------------------------------------------
+
+-- LOG TABLE
 CREATE TABLE incident_log (
-log_id INT AUTO_INCREMENT PRIMARY KEY,
-incident_id INT,
-action VARCHAR(50),
-action_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    log_id INT AUTO_INCREMENT PRIMARY KEY,
+    incident_id INT,
+    action VARCHAR(50),
+    log_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- AFTER INSERT TRIGGER
 DELIMITER //
 
 CREATE TRIGGER after_incident_insert
 AFTER INSERT ON incidents
 FOR EACH ROW
 BEGIN
-INSERT INTO incident_log(incident_id,action)
-VALUES(NEW.incident_id,'Incident Created');
+    INSERT INTO incident_log(incident_id, action)
+    VALUES (NEW.incident_id, 'Incident Created');
 END //
 
 DELIMITER ;
 
+
+-- BEFORE INSERT TRIGGER (Consistency)
 DELIMITER //
 
 CREATE TRIGGER before_incident_insert
 BEFORE INSERT ON incidents
 FOR EACH ROW
 BEGIN
-IF NEW.confidence > 100 THEN
-SET NEW.confidence = 100;
-END IF;
+    IF NEW.confidence > 100 THEN
+        SET NEW.confidence = 100;
+    END IF;
 END //
 
 DELIMITER ;
 
-/* =========================
-CURSOR + EXCEPTION HANDLING
-========================= */
 
-DELIMITER //
+-------------------------------------------------------
+-- 🔑 DCL (ACCESS CONTROL)
+-------------------------------------------------------
 
-CREATE PROCEDURE ProcessIncidents()
-BEGIN
-DECLARE done INT DEFAULT FALSE;
-DECLARE inc_id INT;
-
-```
-DECLARE cur CURSOR FOR SELECT incident_id FROM incidents;
-DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
-DECLARE CONTINUE HANDLER FOR SQLEXCEPTION SELECT 'Error occurred';
-
-OPEN cur;
-
-read_loop: LOOP
-    FETCH cur INTO inc_id;
-    IF done THEN LEAVE read_loop; END IF;
-
-    UPDATE incidents
-    SET confidence = confidence + 1
-    WHERE incident_id = inc_id;
-END LOOP;
-
-CLOSE cur;
-```
-
-END //
-
-DELIMITER ;
-
-CALL ProcessIncidents();
-
-/* =========================
-DCL
-========================= */
-
-CREATE USER IF NOT EXISTS 'sentra_user'@'localhost'
+CREATE USER IF NOT EXISTS 'demo_user'@'localhost'
 IDENTIFIED BY 'password123';
 
-GRANT SELECT, INSERT, UPDATE ON sentra.*
-TO 'sentra_user'@'localhost';
+GRANT SELECT, INSERT, UPDATE ON full_demo.* TO 'demo_user'@'localhost';
 
-REVOKE DELETE ON sentra.*
-FROM 'sentra_user'@'localhost';
+REVOKE DELETE ON full_demo.* FROM 'demo_user'@'localhost';
 
-/* =========================
-TEST QUERIES
-========================= */
 
+-------------------------------------------------------
+-- 📊 FINAL SELECTS (IMPORTANT FOR EXAM)
+-------------------------------------------------------
+
+-- UNF
+SELECT * FROM IncidentData_UNF;
+
+-- 1NF
+SELECT * FROM IncidentData_1NF;
+
+-- 2NF
 SELECT * FROM users;
 SELECT * FROM incidents;
-SELECT * FROM reports;
 SELECT * FROM responders;
 SELECT * FROM responses;
+
+-- 3NF
+SELECT * FROM departments;
+SELECT * FROM responders_3NF;
+
+-- Logs
 SELECT * FROM incident_log;
+
+-- View
 SELECT * FROM incident_summary;
-SELECT * FROM detailed_incident_view;
