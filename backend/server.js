@@ -1,47 +1,107 @@
-const express = require("express")
-const mysql = require("mysql2")
-const cors = require("cors")
+require("dotenv").config();
 
-const app = express()
+const express = require("express");
+const mysql = require("mysql2");
+const cors = require("cors");
 
-app.use(cors())
-app.use(express.json())
+const app = express();
 
+/* =====================
+   MIDDLEWARE
+===================== */
+app.use(cors());
+app.use(express.json());
+
+/* =====================
+   DB CONNECTION
+===================== */
 const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "Parkhu@1234",
-  database: "sentra"
-})
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+});
 
-db.connect(err => {
-  if(err){
-    console.log(err)
+db.connect((err) => {
+  if (err) {
+    console.error("DB Connection Error:", err);
   } else {
-    console.log("MySQL Connected")
+    console.log("MySQL Connected");
   }
-})
+});
 
-app.get("/incidents", (req,res)=>{
-  db.query("SELECT * FROM incidents",(err,result)=>{
-    if(err){
-      res.send(err)
-    } else {
-      res.json(result)
+/* =====================
+   HEALTH CHECK
+===================== */
+app.get("/", (req, res) => {
+  res.send("API Running...");
+});
+
+/* =====================
+   INSERT INCIDENT
+===================== */
+app.post("/report", (req, res) => {
+  const { user_id, type, severity, confidence } = req.body;
+
+  if (!type || !severity) {
+    return res.status(400).send("Missing required fields");
+  }
+
+  const sql = `
+    INSERT INTO incidents (user_id, type, severity, confidence)
+    VALUES (?, ?, ?, ?)
+  `;
+
+  db.query(sql, [user_id || 1, type, severity, confidence || 40], (err) => {
+    if (err) {
+      console.error("Insert Error:", err);
+      return res.status(500).send("Database insert failed");
     }
-  })
-})
 
-app.get("/analytics",(req,res)=>{
-  db.query(
-    "SELECT type, COUNT(*) as total FROM incidents GROUP BY type",
-    (err,result)=>{
-      if(err) res.send(err)
-      else res.json(result)
+    res.json({ message: "Incident saved to SQL" });
+  });
+});
+
+/* =====================
+   GET INCIDENTS
+===================== */
+app.get("/incidents", (req, res) => {
+  db.query("SELECT * FROM incidents ORDER BY incident_id DESC", (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send("Fetch error");
     }
-  )
-})
+    res.json(result);
+  });
+});
 
-app.listen(5000,()=>{
-  console.log("Server running on port 5000")
-})
+/* =====================
+   ANALYTICS
+===================== */
+app.get("/analytics", (req, res) => {
+  const sql = `
+    SELECT 
+      type,
+      COUNT(*) AS total,
+      AVG(confidence) AS avg_confidence
+    FROM incidents
+    GROUP BY type
+  `;
+
+  db.query(sql, (err, result) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send("Analytics error");
+    }
+    res.json(result);
+  });
+});
+
+/* =====================
+   SERVER START
+===================== */
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});

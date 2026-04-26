@@ -25,25 +25,41 @@ export const createIncident = async (
     | "confidence"
   >
 ) => {
-  await addDoc(collection(db, "incidents"), {
-    ...incident,
+  try {
+    const docRef = await addDoc(collection(db, "incidents"), {
+      ...incident,
+      status: "Reported" as Status,
+      createdAt: serverTimestamp(),
+      crowdVerifyCount: 0,
+      crowdVerifiedBy: [],
+      sensorVerified: false,
+      confidence: 40,
+    });
 
-    // System-controlled fields
-    status: "Reported" as Status,
-    createdAt: serverTimestamp(),
+    // 🔥 Sync to SQL
+    await fetch("http://localhost:5000/report", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        user_id: 1,
+        type: incident.type,
+        severity: incident.severity,
+        confidence: 40,
+      }),
+    });
 
-    // Verification logic
-    crowdVerifyCount: 0,
-    crowdVerifiedBy: [],
-    sensorVerified: false,
+    return docRef.id;
 
-    // Initial confidence (future AI-ready)
-    confidence: 40,
-  });
+  } catch (error) {
+    console.error("Incident creation failed:", error);
+    throw error;
+  }
 };
 
 /* =====================
-   CROWD VERIFY INCIDENT
+   CROWD VERIFY
 ===================== */
 export const crowdVerifyIncident = async (
   id: string,
@@ -56,20 +72,15 @@ export const crowdVerifyIncident = async (
 
   const data = snap.data();
 
-  // 🛑 Prevent duplicate verification
   if (data.crowdVerifiedBy?.includes(userId)) {
-    console.warn("Already verified by this user/session");
+    console.warn("Already verified");
     return;
   }
 
   await updateDoc(ref, {
     crowdVerifyCount: increment(1),
     crowdVerifiedBy: arrayUnion(userId),
-
-    // Soft escalation
     status: "Verified" as Status,
-
-    // Increase confidence gradually
     confidence: increment(10),
   });
 };

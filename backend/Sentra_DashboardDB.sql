@@ -263,7 +263,7 @@ REVOKE DELETE ON full_demo.* FROM 'demo_user'@'localhost';
 
 
 -------------------------------------------------------
--- 📊 FINAL SELECTS (IMPORTANT FOR EXAM)
+--  FINAL SELECTS 
 -------------------------------------------------------
 
 -- UNF

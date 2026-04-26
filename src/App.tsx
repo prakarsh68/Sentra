@@ -17,25 +17,51 @@ function App() {
   return (
     <>
       <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
-        <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
-        <Route path="/operations" element={<OperationsView />} />
+     <Routes>
+  <Route path="/" element={<Home />} />
 
-        {user && role === "citizen" && (
-          <Route path="/report" element={<Report />} />
-        )}
+  <Route path="/login" element={!user ? <Login /> : <Navigate to="/" />} />
+  <Route path="/register" element={!user ? <Register /> : <Navigate to="/" />} />
 
-        {user && role === "responder" && (
-          <>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/map" element={<MapView />} />
-          </>
-        )}
+  <Route path="/operations" element={<OperationsView />} />
 
-        <Route path="*" element={<Navigate to="/" />} />
-      </Routes>
+  {/* Citizen Route */}
+  <Route
+    path="/report"
+    element={
+      user && role === "citizen" ? (
+        <Report />
+      ) : (
+        <Navigate to="/login" />
+      )
+    }
+  />
+
+  {/* Responder Routes */}
+  <Route
+    path="/dashboard"
+    element={
+      user && role === "responder" ? (
+        <Dashboard />
+      ) : (
+        <Navigate to="/login" />
+      )
+    }
+  />
+
+  <Route
+    path="/map"
+    element={
+      user && role === "responder" ? (
+        <MapView />
+      ) : (
+        <Navigate to="/login" />
+      )
+    }
+  />
+
+  <Route path="*" element={<Navigate to="/" />} />
+</Routes>
     </>
   );
 }

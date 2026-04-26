@@ -11,7 +11,7 @@ function Report() {
   const [type, setType] = useState<IncidentType | "">("");
   const [severity, setSeverity] = useState<Severity | "">("");
   const [description, setDescription] = useState("");
-  const [mediaUrl, setMediaUrl] = useState(""); // ✅ OPTIONAL MEDIA
+  const [mediaUrl, setMediaUrl] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const submit = () => {
@@ -24,26 +24,31 @@ function Report() {
 
     navigator.geolocation.getCurrentPosition(
       async (pos) => {
-        await createIncident({
-          type,
-          severity,
-          description,
-          status: "Reported",
-          location: {
-            lat: pos.coords.latitude,
-            lng: pos.coords.longitude,
-          },
-          mediaUrl: mediaUrl || null, // ✅ OPTIONAL
-        });
+        try {
+          await createIncident({
+            type,
+            severity,
+            description, // ✅ now valid
+            location: {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+            },
+            mediaUrl: mediaUrl || null,
+          });
 
-        // Reset form
-        setType("");
-        setSeverity("");
-        setDescription("");
-        setMediaUrl("");
-        setSubmitting(false);
+          // Reset form
+          setType("");
+          setSeverity("");
+          setDescription("");
+          setMediaUrl("");
 
-        alert("Incident reported successfully. Help is on the way.");
+          alert("Incident reported successfully. Help is on the way.");
+        } catch (err) {
+          console.error(err);
+          alert("Something went wrong while submitting.");
+        } finally {
+          setSubmitting(false);
+        }
       },
       () => {
         setSubmitting(false);
@@ -55,6 +60,7 @@ function Report() {
   return (
     <main className="min-h-screen bg-[#020617] flex items-center justify-center px-6">
       <div className="w-full max-w-md bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-8">
+
         {/* HEADER */}
         <div className="mb-8">
           <h2 className="text-2xl font-semibold text-slate-100 mb-2">
@@ -97,7 +103,7 @@ function Report() {
           />
         </div>
 
-        {/* OPTIONAL MEDIA */}
+        {/* MEDIA */}
         <div className="mb-5">
           <label className="block text-xs uppercase tracking-widest text-slate-400 mb-2">
             Media (optional)

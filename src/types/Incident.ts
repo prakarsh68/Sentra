@@ -18,16 +18,29 @@ export type IncidentType =
 // Core Incident interface
 export interface Incident {
   id: string;
+
   type: IncidentType;
   severity: Severity;
+
+  description: string; // ✅ FIXED
+
   status: Status;
-  priority: number;
-  createdAt: number;
+
+  createdAt: any; // ✅ Firebase timestamp compatible
+
   location: {
     lat: number;
     lng: number;
     label?: string;
   };
+
+  mediaUrl?: string | null; // ✅ optional media
+
   sensorVerified?: boolean;
   confidence?: number;
+
+  crowdVerifyCount?: number;     // ✅ used in your logic
+  crowdVerifiedBy?: string[];    // ✅ used in verify
+
+  priority?: number; // ✅ used in dashboard
 }

@@ -129,8 +129,16 @@ export default function Dashboard() {
   ===================== */
 
   useEffect(() => {
+  const fetchData = () => {
     getIncidentAnalytics().then(setAnalytics);
-  }, []);
+  };
+
+  fetchData();
+
+  const interval = setInterval(fetchData, 5000); // refresh every 5 sec
+
+  return () => clearInterval(interval);
+}, []);
 
   /* =====================
      PROCESS INCIDENTS
